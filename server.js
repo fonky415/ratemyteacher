@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // MongoDB Atlas connection string
 const mongoURI = 'mongodb+srv://ratemyteacher:ratemyteacherplease@teacher-data.gnavxew.mongodb.net/?retryWrites=true&w=majority&appName=teacher-data';
