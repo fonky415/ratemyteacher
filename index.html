@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rate My Teacher - Simple Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+    h1 { color: #333; }
+    .professor { background: #fff; padding: 16px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    .ratings { color: #fa0; }
+    form { margin-bottom: 32px; }
+    label { display: block; margin-top: 12px; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 4px; }
+    button { margin-top: 12px; padding: 8px 18px; }
+    .review { color: #444; margin: 6px 0; }
+    .prof-title { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <h1>Rate My Teacher</h1>
+
+  <h2>Add a New Professor</h2>
+  <form id="add-professor-form">
+    <label>Name:
+      <input type="text" id="prof-name" required />
+    </label>
+    <label>Department:
+      <input type="text" id="prof-dept" required />
+    </label>
+    <button type="submit">Add Professor</button>
+  </form>
+
+  <h2>Professors</h2>
+  <div id="professors"></div>
+
+  <script>
+    const api = "http://localhost:5000";
+
+    // Get and display professors
+    async function loadProfessors() {
+      const res = await fetch(api + "/professors");
+      const professors = await res.json();
+      const profDiv = document.getElementById("professors");
+      profDiv.innerHTML = "";
+
+      professors.forEach((prof) => {
+        const avgRating = prof.ratings.length
+          ? (prof.ratings.reduce((a, b) => a + b, 0) / prof.ratings.length).toFixed(2)
+          : "No ratings";
+
+        const div = document.createElement("div");
+        div.className = "professor";
+        div.innerHTML = `
+          <h3 class="prof-title">${prof.name} (${prof.department})</h3>
+          <div><strong>Average Rating:</strong> <span class="ratings">${avgRating}</span></div>
+          <div><strong>Reviews:</strong> ${prof.reviews.length ? "" : "<em>None yet.</em>"}</div>
+          <div>
+            ${prof.reviews.map((r, i) => `<div class="review">⭐ ${prof.ratings[i] || ""}: ${r}</div>`).join("")}
+          </div>
+          <form class="rate-form" data-id="${prof._id}">
+            <label>Rate (1-5):
+              <input type="number" name="rating" min="1" max="5" required />
+            </label>
+            <label>Review:
+              <input type="text" name="review" required />
+            </label>
+            <button type="submit">Add Rating & Review</button>
+          </form>
+        `;
+        profDiv.appendChild(div);
+      });
+
+      // Add event listeners to all rate forms
+      document.querySelectorAll('.rate-form').forEach(form => {
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const profId = form.getAttribute('data-id');
+          const rating = form.rating.value;
+          const review = form.review.value;
+
+          await fetch(api + `/professors/${profId}/rate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rating, review })
+          });
+          form.reset();
+          loadProfessors();
+        };
+      });
+    }
+
+    // Add professor form
+    document.getElementById('add-professor-form').onsubmit = async function (e) {
+      e.preventDefault();
+      const name = document.getElementById("prof-name").value;
+      const department = document.getElementById("prof-dept").value;
+      await fetch(api + "/professors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, department })
+      });
+      this.reset();
+      loadProfessors();
+    };
+
+    loadProfessors();
+  </script>
+</body>
+</html>
